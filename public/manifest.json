@@ -1,0 +1,85 @@
+{
+  "name": "FrescoGuard - Control de Vencimientos",
+  "short_name": "FrescoGuard",
+  "description": "Detecta fechas de vencimiento con IA, recibe notificaciones y descubre recetas deliciosas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0B",
+  "theme_color": "#0B0B0B",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-72.svg",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-96.svg",
+      "sizes": "96x96",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-128.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-144.svg",
+      "sizes": "144x144",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-152.svg",
+      "sizes": "152x152",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.svg",
+      "sizes": "384x384",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Escanear",
+      "short_name": "Escanear",
+      "description": "Escanear un alimento",
+      "url": "/camera",
+      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Alimentos",
+      "short_name": "Alimentos",
+      "description": "Ver todos los alimentos",
+      "url": "/foods",
+      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Recetas",
+      "short_name": "Recetas",
+      "description": "Generar recetas",
+      "url": "/recipes",
+      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    }
+  ]
+}
