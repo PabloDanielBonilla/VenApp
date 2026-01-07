@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, Trash2, Edit2, Plus, Utensils } from 'lucide-react'
+import { Search, Filter, Trash2, Edit2, Plus, Utensils, ChefHat, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,10 +36,26 @@ export default function FoodsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [userPlan, setUserPlan] = useState<'FREE' | 'PREMIUM_MONTHLY' | 'PREMIUM_YEARLY'>('FREE')
 
   useEffect(() => {
     fetchFoods()
+    fetchUserPlan()
   }, [])
+
+  const fetchUserPlan = async () => {
+    try {
+      const response = await fetch('/api/auth/user')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.authenticated && data.user?.plan) {
+          setUserPlan(data.user.plan)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user plan:', error)
+    }
+  }
 
   useEffect(() => {
     filterFoods()
@@ -50,16 +66,41 @@ export default function FoodsPage() {
       const response = await fetch('/api/foods')
       if (response.ok) {
         const data = await response.json()
-        setFoods(data)
+        // La API retorna { success: true, foods: [...] }
+        const foodsArray = data.foods || data || []
+        
+        // Mapear los datos de la API a la estructura esperada
+        const mappedFoods: FoodItem[] = foodsArray.map((food: any) => ({
+          id: food.id,
+          name: food.name,
+          expiryDate: food.expiry_date || food.expiryDate,
+          daysUntilExpiry: food.days_until_expiry || food.daysUntilExpiry || 0,
+          status: food.expiry_status || food.status || 'safe',
+          category: food.category,
+          imageUrl: food.image_url || food.imageUrl,
+          notes: food.notes
+        }))
+        
+        setFoods(mappedFoods)
+      } else {
+        // Si hay error, asegurar que foods sea un array vacío
+        setFoods([])
       }
     } catch (error) {
       console.error('Error fetching foods:', error)
+      setFoods([]) // Asegurar que foods sea un array vacío en caso de error
     } finally {
       setLoading(false)
     }
   }
 
   const filterFoods = () => {
+    // Asegurar que foods sea un array antes de hacer el spread
+    if (!Array.isArray(foods)) {
+      setFilteredFoods([])
+      return
+    }
+    
     let filtered = [...foods]
 
     // Apply status filter
@@ -86,12 +127,37 @@ export default function FoodsPage() {
         method: 'DELETE'
       })
 
+      const data = await response.json().catch(() => ({ error: 'Error desconocido' }))
+
       if (response.ok) {
+        // Actualizar la lista de alimentos
         setFoods(foods.filter(food => food.id !== id))
+        // También actualizar filteredFoods
+        setFilteredFoods(filteredFoods.filter(food => food.id !== id))
+      } else {
+        console.error('Error deleting food:', data.error)
+        alert(data.error || 'No se pudo eliminar el alimento')
       }
     } catch (error) {
       console.error('Error deleting food:', error)
+      alert('Error de conexión al eliminar el alimento')
     }
+  }
+
+  const handleEdit = (food: FoodItem) => {
+    // Navegar a la página de edición con los datos del alimento
+    const params = new URLSearchParams()
+    params.set('id', food.id)
+    params.set('name', food.name)
+    params.set('expiryDate', food.expiryDate)
+    if (food.category) params.set('category', food.category)
+    if (food.notes) params.set('notes', food.notes)
+    if (food.imageUrl) {
+      // Guardar la imagen en sessionStorage para evitar URLs largas
+      sessionStorage.setItem('edit_food_image', food.imageUrl)
+    }
+    
+    window.location.href = `/foods/add?${params.toString()}`
   }
 
   const getStatusColor = (status: string) => {
@@ -122,6 +188,19 @@ export default function FoodsPage() {
     if (days === 1) return 'Vence mañana'
     return `Vence en ${days} días`
   }
+
+  const handleViewRecipe = (food: FoodItem) => {
+    // Fricción inteligente: Si es FREE y tiene varios alimentos por vencer
+    if (userPlan === 'FREE' && foods.filter(f => f.status !== 'safe').length >= 3) {
+      // No bloquear, solo crear conciencia con toast
+      // El toast se mostrará en la página de recetas
+    }
+    window.location.href = `/recipes?food=${food.id}`
+  }
+
+  // Calcular alimentos por vencer para mensaje contextual
+  const expiringCount = foods.filter(f => f.status === 'expiring-soon' || f.status === 'expired').length
+  const filteredExpiringCount = filteredFoods.filter(f => f.status === 'expiring-soon' || f.status === 'expired').length
 
   if (loading) {
     return (
@@ -189,6 +268,43 @@ export default function FoodsPage() {
             </Button>
           ))}
         </motion.div>
+
+        {/* Mensaje contextual cuando hay alimentos por vencer */}
+        {activeFilter === 'expiring-soon' && filteredExpiringCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-4 mb-4"
+          >
+            <Card className="bg-gradient-to-br from-orange-500/20 to-amber-500/20 border-orange-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <ChefHat className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-orange-500 text-sm">
+                      {filteredExpiringCount} alimento{filteredExpiringCount > 1 ? 's' : ''} vence{filteredExpiringCount > 1 ? 'n' : ''} pronto
+                    </p>
+                    <p className="text-xs text-orange-500/70 mt-0.5">
+                      ¿Los cocinamos? Te armamos recetas con estos alimentos
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={() => window.location.href = '/recipes'}
+                  >
+                    <ChefHat className="h-3.5 w-3.5 mr-1.5" />
+                    Generar recetas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Foods List */}
         <motion.div
@@ -260,16 +376,28 @@ export default function FoodsPage() {
                               {getStatusText(food.status, food.daysUntilExpiry)}
                             </span>
                           </div>
-                          <div className="mt-2 flex items-center justify-between">
+                          <div className="mt-2 flex items-center justify-between gap-2">
                             <p className="text-xs text-muted-foreground">
                               {formatExpiryDate(new Date(food.expiryDate))}
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                              {/* Botón Receta - Solo para alimentos expired o expiring-soon */}
+                              {food.status !== 'safe' && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="h-7 px-3 bg-primary text-primary-foreground"
+                                  onClick={() => handleViewRecipe(food)}
+                                >
+                                  <ChefHat className="h-3 w-3 mr-1.5" />
+                                  Receta
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"
-                                onClick={() => {/* TODO: Edit functionality */}}
+                                onClick={() => handleEdit(food)}
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
@@ -293,21 +421,7 @@ export default function FoodsPage() {
           )}
         </motion.div>
 
-        {/* Add Food FAB (only if we want it here too) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 }}
-          className="fixed bottom-24 right-4 z-40"
-        >
-          <Button
-            size="icon"
-            className="h-14 w-14 rounded-full shadow-lg shadow-primary/25"
-            onClick={() => {/* TODO: Open add food modal */}}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </motion.div>
+        {/* FAB removido - El FloatingCameraButton ya está disponible desde AppLayout */}
       </div>
     </MobileWrapper>
   )

@@ -3,14 +3,14 @@ import { z } from 'zod'
 // Esquema de autenticación
 export const loginSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(7, 'La contraseña debe tener al menos 7 caracteres')
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
 
 export const registerSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(7, 'La contraseña debe tener al menos 7 caracteres'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').optional()
 })
 
@@ -20,8 +20,8 @@ export type RegisterInput = z.infer<typeof registerSchema>
 export const foodSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
-  category: z.string().optional(),
-  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional()
+  category: z.string().nullable().optional(),
+  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').nullable().optional()
 })
 
 export type FoodInput = z.infer<typeof foodSchema>

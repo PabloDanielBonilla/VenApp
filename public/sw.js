@@ -1,11 +1,12 @@
 // Service Worker para PWA
-const CACHE_NAME = 'frescoguard-v1'
+const CACHE_NAME = 'venai-v4'
 const urlsToCache = [
   '/',
   '/foods',
   '/recipes',
   '/profile',
   '/manifest.json',
+  '/logo.png',
 ]
 
 self.addEventListener('install', (event) => {
@@ -56,11 +57,11 @@ self.addEventListener('fetch', (event) => {
 // Manejar notificaciones push
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {}
-  const title = data.title || 'FrescoGuard'
+  const title = data.title || 'VenAi'
   const options = {
     body: data.message || 'Tienes una nueva notificación',
-    icon: '/icon-192.svg',
-    badge: '/icon-96.svg',
+    icon: '/icon-192.png',
+    badge: '/icon-96.png',
     tag: data.tag || 'notification',
     requireInteraction: false,
     data: data.url || '/'
@@ -78,5 +79,23 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.openWindow(event.notification.data || '/')
   )
+})
+
+// Manejar mensajes del cliente para mostrar notificaciones programadas
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data
+    
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        ...options,
+        icon: options.icon || '/icon-192.png',
+        badge: options.badge || '/icon-96.png',
+        tag: options.tag || 'venai',
+        requireInteraction: false,
+        data: options.data || '/'
+      })
+    )
+  }
 })
 

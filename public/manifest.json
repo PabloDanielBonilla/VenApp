@@ -1,6 +1,6 @@
 {
-  "name": "FrescoGuard - Control de Vencimientos",
-  "short_name": "FrescoGuard",
+  "name": "VenAi - Control de Vencimientos",
+  "short_name": "VenAi",
   "description": "Detecta fechas de vencimiento con IA, recibe notificaciones y descubre recetas deliciosas",
   "start_url": "/",
   "display": "standalone",
@@ -10,52 +10,52 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/icon-72.svg",
+      "src": "/icon-72.png",
       "sizes": "72x72",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-96.svg",
+      "src": "/icon-96.png",
       "sizes": "96x96",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-128.svg",
+      "src": "/icon-128.png",
       "sizes": "128x128",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-144.svg",
+      "src": "/icon-144.png",
       "sizes": "144x144",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-152.svg",
+      "src": "/icon-152.png",
       "sizes": "152x152",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-192.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-384.svg",
+      "src": "/icon-384.png",
       "sizes": "384x384",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["productivity", "lifestyle", "utilities"],
@@ -65,21 +65,21 @@
       "short_name": "Escanear",
       "description": "Escanear un alimento",
       "url": "/camera",
-      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Alimentos",
       "short_name": "Alimentos",
       "description": "Ver todos los alimentos",
       "url": "/foods",
-      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Recetas",
       "short_name": "Recetas",
       "description": "Generar recetas",
       "url": "/recipes",
-      "icons": [{ "src": "/icon-96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     }
   ]
 }

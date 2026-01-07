@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, Clock, ChefHat, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Sparkles, Clock, ChefHat, CheckCircle2, AlertCircle, Crown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -33,24 +33,58 @@ export default function RecipesPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [recipe, setRecipe] = useState<GeneratedRecipe | null>(null)
+  const [userPlan, setUserPlan] = useState<'FREE' | 'PREMIUM_MONTHLY' | 'PREMIUM_YEARLY'>('FREE')
+  const [showPremiumPrompt, setShowPremiumPrompt] = useState(false)
 
   useEffect(() => {
     fetchExpiringFoods()
+    fetchUserPlan()
   }, [])
+
+  const fetchUserPlan = async () => {
+    try {
+      const response = await fetch('/api/auth/user')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.authenticated && data.user?.plan) {
+          setUserPlan(data.user.plan)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user plan:', error)
+    }
+  }
 
   const fetchExpiringFoods = async () => {
     try {
       const response = await fetch('/api/foods?filter=expiring')
       if (response.ok) {
         const data = await response.json()
-        // Filter foods that are expiring soon or expired
-        const expiring = data.filter((food: FoodItem) =>
+        // La API retorna { success: true, foods: [...] }
+        const foodsArray = data.foods || data || []
+        
+        // Mapear los datos de la API a la estructura esperada
+        const mappedFoods: FoodItem[] = foodsArray.map((food: any) => ({
+          id: food.id,
+          name: food.name,
+          expiryDate: food.expiry_date || food.expiryDate,
+          daysUntilExpiry: food.days_until_expiry || food.daysUntilExpiry || 0,
+          status: food.expiry_status || food.status || 'safe',
+          category: food.category,
+          imageUrl: food.image_url || food.imageUrl
+        }))
+        
+        // Ya están filtrados por la API, pero por si acaso filtramos nuevamente
+        const expiring = mappedFoods.filter((food: FoodItem) =>
           food.status === 'expiring-soon' || food.status === 'expired'
         )
         setFoods(expiring)
+      } else {
+        setFoods([])
       }
     } catch (error) {
       console.error('Error fetching foods:', error)
+      setFoods([])
     } finally {
       setLoading(false)
     }
@@ -72,6 +106,16 @@ export default function RecipesPage() {
         variant: 'destructive'
       })
       return
+    }
+
+    // Fricción inteligente: Si es FREE y tiene 3+ alimentos venciendo
+    if (userPlan === 'FREE' && foods.length >= 3) {
+      toast({
+        title: '💡 Con Premium esto es automático',
+        description: 'Las recetas se generan automáticamente cuando tus alimentos están por vencer',
+        duration: 5000
+      })
+      // No bloquear, solo crear conciencia
     }
 
     setGenerating(true)
@@ -139,6 +183,39 @@ export default function RecipesPage() {
             Crea recetas deliciosas con ingredientes por vencer
           </p>
         </motion.div>
+
+        {/* Premium Prompt - Fricción inteligente */}
+        {userPlan === 'FREE' && foods.length >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 mb-4"
+          >
+            <Card className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-amber-500 text-sm">Con Premium esto es automático</p>
+                    <p className="text-xs text-amber-500/70">
+                      Las recetas se generan automáticamente cuando tus alimentos están por vencer
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-500/30 text-amber-500"
+                    onClick={() => window.location.href = '/profile'}
+                  >
+                    Ver planes
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Ingredients Selection */}
         <motion.div

@@ -80,64 +80,93 @@ export interface Plan {
     advancedRecipes: boolean
     smartNotifications: boolean
     history: boolean
+    ocrUnlimited: boolean
+    exportData: boolean
+    customCategories: boolean
   }
+  popular?: boolean
+  savings?: string
+  originalPrice?: number
 }
 
 export const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Gratis',
-    description: 'Para empezar a organizar tu despensa',
+    description: 'Perfecto para probar y empezar a organizar tu despensa',
     price: 0,
     interval: 'monthly',
     features: [
-      'Máximo 5 alimentos',
-      'Notificaciones básicas',
-      'Acceso a recetas simples'
+      'Hasta 10 alimentos simultáneos',
+      'Detección de fechas con IA (OCR)',
+      'Notificaciones básicas de vencimiento',
+      'Recetas simples con ingredientes disponibles',
+      'Categorización automática',
+      'Interfaz completa sin anuncios'
     ],
     limits: {
-      maxFoods: 5,
+      maxFoods: 10,
       advancedRecipes: false,
       smartNotifications: false,
-      history: false
+      history: false,
+      ocrUnlimited: false,
+      exportData: false,
+      customCategories: false
     }
   },
   {
     id: 'premium-monthly',
-    name: 'Premium Mensual',
-    description: 'Control total de tu despensa',
-    price: 9.99,
+    name: 'Premium',
+    description: 'Control total y funciones avanzadas para tu despensa',
+    price: 4.99,
     interval: 'monthly',
+    popular: true,
     features: [
       'Alimentos ilimitados',
-      'Notificaciones inteligentes',
-      'Recetas avanzadas',
-      'Historial completo',
-      'Soporte prioritario'
+      'OCR ilimitado con IA avanzada',
+      'Notificaciones inteligentes personalizables',
+      'Recetas avanzadas con IA',
+      'Historial completo y estadísticas',
+      'Exportar datos (CSV, PDF)',
+      'Categorías personalizadas',
+      'Soporte prioritario',
+      'Acceso a nuevas funciones primero'
     ],
     limits: {
       maxFoods: Infinity,
       advancedRecipes: true,
       smartNotifications: true,
-      history: true
+      history: true,
+      ocrUnlimited: true,
+      exportData: true,
+      customCategories: true
     }
   },
   {
     id: 'premium-yearly',
     name: 'Premium Anual',
-    description: 'Ahorra 2 meses suscribiéndote anualmente',
-    price: 99.99,
+    description: 'Ahorra 33% con la suscripción anual. El mejor valor',
+    price: 39.99,
+    originalPrice: 59.88,
     interval: 'yearly',
+    savings: 'Ahorra 20€ al año',
     features: [
       'Todo lo de Premium Mensual',
-      '2 meses gratis',
-      'Acceso anticipado a nuevas funciones'
+      'Ahorra 33% vs mensual',
+      'Acceso anticipado a funciones beta',
+      'Soporte premium prioritario',
+      'Estadísticas avanzadas y reportes',
+      'Backup automático en la nube',
+      'Sin compromiso, cancela cuando quieras'
     ],
     limits: {
       maxFoods: Infinity,
       advancedRecipes: true,
       smartNotifications: true,
-      history: true
+      history: true,
+      ocrUnlimited: true,
+      exportData: true,
+      customCategories: true
     }
   }
 ]

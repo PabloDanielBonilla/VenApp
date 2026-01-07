@@ -20,9 +20,19 @@ export function AuthGuard({ children, action = 'realizar esta acción' }: AuthGu
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/user')
-      setIsAuthenticated(response.ok)
-    } catch {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Verificar si el usuario está autenticado basado en la respuesta
+        setIsAuthenticated(data.authenticated === true)
+      } else {
+        setIsAuthenticated(false)
+      }
+    } catch (error) {
+      // Solo loggear errores reales de red (sin conexión, etc.)
       setIsAuthenticated(false)
     }
   }

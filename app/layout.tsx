@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppLayout } from "@/components/app-layout";
+import { NotificationChecker } from "@/components/notification-checker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,22 +12,27 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FrescoGuard - Control de Vencimientos",
+  title: "VenAi - Control de Vencimientos",
   description: "Nunca más dejes que tus alimentos se echen a perder. Detecta fechas de vencimiento con IA, recibe notificaciones inteligentes y descubre recetas deliciosas.",
   keywords: ["alimentos", "vencimiento", "notificaciones", "recetas", "IA", "OCR", "despensa"],
-  authors: [{ name: "FrescoGuard Team" }],
+  authors: [{ name: "VenAi Team" }],
   icons: {
-    icon: "/icon-192.svg",
-    apple: "/icon-192.svg",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" }
+    ],
   },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Frescoguard",
+    title: "VenAi",
   },
   openGraph: {
-    title: "Frescoguard - Control de Vencimientos con IA",
+    title: "VenAi - Control de Vencimientos con IA",
     description: "Detecta fechas de vencimiento, recibe notificaciones y descubre recetas con IA",
     type: "website",
   },
@@ -54,7 +60,8 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon-192.svg" />
+        <link rel="icon" type="image/png" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="theme-color" content="#0B0B0B" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -69,6 +76,7 @@ export default function RootLayout({
           <AppLayout>{children}</AppLayout>
           <Toaster />
           <ServiceWorkerRegistration />
+          <NotificationChecker />
         </ThemeProvider>
       </body>
     </html>

@@ -6,23 +6,45 @@ import { Camera, X, RotateCcw, Sparkles, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MobileWrapper } from '@/components/mobile-wrapper'
 import { AuthGuard } from '@/components/auth-guard'
+import { toast } from '@/hooks/use-toast'
+import { useRouter } from 'next/navigation'
 
 export default function CameraPage() {
+  const router = useRouter()
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [ocrResult, setOcrResult] = useState<{ foodName?: string; expiryDate?: string } | null>(null)
+  const [photoCount, setPhotoCount] = useState<{ taken: number; limit: number; remaining: number; canTake: boolean } | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     startCamera()
+    fetchPhotoCount()
     return () => {
       stopCamera()
     }
   }, [facingMode])
+
+  const fetchPhotoCount = async () => {
+    try {
+      const response = await fetch('/api/camera/count')
+      if (response.ok) {
+        const data = await response.json()
+        setPhotoCount({
+          taken: data.photosTaken || 0,
+          limit: data.limit || 3,
+          remaining: data.remaining !== undefined ? data.remaining : (data.limit || 3) - (data.photosTaken || 0),
+          canTake: data.canTakePhoto !== false
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching photo count:', error)
+    }
+  }
 
   const startCamera = async () => {
     setIsLoading(true)
@@ -56,8 +78,18 @@ export default function CameraPage() {
     }
   }
 
-  const captureImage = () => {
+  const captureImage = async () => {
     if (!videoRef.current || !canvasRef.current) return
+
+    // Verificar límite antes de capturar
+    if (photoCount && !photoCount.canTake) {
+      toast({
+        title: 'Límite alcanzado',
+        description: 'Has alcanzado el límite de 3 fotos del plan gratuito. Actualiza a Premium para fotos ilimitadas.',
+        variant: 'destructive'
+      })
+      return
+    }
 
     const video = videoRef.current
     const canvas = canvasRef.current
@@ -72,6 +104,24 @@ export default function CameraPage() {
       // Convert to base64
       const imageData = canvas.toDataURL('image/jpeg', 0.9)
       setCapturedImage(imageData)
+
+      // Incrementar el conteo de fotos
+      try {
+        const response = await fetch('/api/camera/count', {
+          method: 'POST'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setPhotoCount({
+            taken: data.photosTaken || 0,
+            limit: data.limit || 3,
+            remaining: data.remaining !== undefined ? data.remaining : (data.limit || 3) - (data.photosTaken || 0),
+            canTake: data.canTakePhoto !== false
+          })
+        }
+      } catch (error) {
+        console.error('Error updating photo count:', error)
+      }
 
       // Stop camera to save battery
       stopCamera()
@@ -89,7 +139,14 @@ export default function CameraPage() {
   }
 
   const processImage = async () => {
-    if (!capturedImage) return
+    if (!capturedImage) {
+      toast({
+        title: 'Error',
+        description: 'No hay imagen para procesar',
+        variant: 'destructive'
+      })
+      return
+    }
 
     setIsProcessing(true)
     try {
@@ -103,33 +160,67 @@ export default function CameraPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setOcrResult({
-          foodName: data.foodName,
-          expiryDate: data.expiryDate
+        if (data.success) {
+          setOcrResult({
+            foodName: data.foodName,
+            expiryDate: data.expiryDate
+          })
+          toast({
+            title: 'Análisis completado',
+            description: data.foodName ? `Detectado: ${data.foodName}` : 'Imagen procesada correctamente'
+          })
+        } else {
+          toast({
+            title: 'Error',
+            description: data.error || 'No se pudo procesar la imagen',
+            variant: 'destructive'
+          })
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast({
+          title: 'Error',
+          description: errorData.error || 'Error al procesar la imagen',
+          variant: 'destructive'
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing image:', error)
+      toast({
+        title: 'Error',
+        description: error?.message || 'Error de conexión al procesar la imagen',
+        variant: 'destructive'
+      })
     } finally {
       setIsProcessing(false)
     }
   }
 
   const handleContinue = () => {
+    // Guardar datos en sessionStorage para evitar problemas con URLs largas
+    if (capturedImage) {
+      sessionStorage.setItem('camera_image', capturedImage)
+    }
+    if (ocrResult?.foodName) {
+      sessionStorage.setItem('camera_foodName', ocrResult.foodName)
+    }
+    if (ocrResult?.expiryDate) {
+      sessionStorage.setItem('camera_expiryDate', ocrResult.expiryDate)
+    }
+
     // Navigate to add food page with OCR results
     const params = new URLSearchParams()
     if (ocrResult?.foodName) params.set('name', ocrResult.foodName)
     if (ocrResult?.expiryDate) params.set('expiryDate', ocrResult.expiryDate)
-    if (capturedImage) params.set('image', capturedImage)
 
-    window.location.href = `/foods/add?${params.toString()}`
+    router.push(`/foods/add?${params.toString()}`)
   }
 
   return (
     <AuthGuard action="tomar una foto">
-      <div className="min-h-screen bg-black flex flex-col">
+      <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
       {/* Camera View */}
-      <div className="relative flex-1 flex flex-col">
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Close Button */}
         <button
           onClick={() => window.history.back()}
@@ -139,7 +230,7 @@ export default function CameraPage() {
         </button>
 
         {/* Video/Canvas Container */}
-        <div className="relative flex-1 bg-black">
+        <div className="relative flex-1 bg-black min-h-0">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
@@ -196,8 +287,8 @@ export default function CameraPage() {
           </AnimatePresence>
         </div>
 
-        {/* Controls */}
-        <div className="bg-black p-6">
+        {/* Controls - Posicionado más arriba para no ser tapado por el navbar */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm pt-2 px-6 z-10" style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}>
           <AnimatePresence>
             {!capturedImage ? (
               <motion.div
@@ -206,6 +297,7 @@ export default function CameraPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="flex items-center justify-between max-w-md mx-auto"
               >
+
                 {/* Flip Camera Button */}
                 <Button
                   variant="ghost"
@@ -219,9 +311,16 @@ export default function CameraPage() {
                 {/* Capture Button */}
                 <button
                   onClick={captureImage}
-                  className="w-20 h-20 rounded-full bg-white border-4 border-white/30 hover:scale-105 transition-transform"
+                  disabled={photoCount ? !photoCount.canTake : false}
+                  className={`
+                    w-20 h-20 rounded-full border-4 transition-transform
+                    ${photoCount && !photoCount.canTake
+                      ? 'bg-gray-500 border-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-white border-white/30 hover:scale-105'
+                    }
+                  `}
                 >
-                  <Camera className="h-8 w-8 text-black mx-auto" />
+                  <Camera className={`h-8 w-8 mx-auto ${photoCount && !photoCount.canTake ? 'text-gray-300' : 'text-black'}`} />
                 </button>
 
                 {/* Spacer */}

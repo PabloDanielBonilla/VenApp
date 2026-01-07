@@ -15,7 +15,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     !NO_CAMERA_ROUTES.some(route => pathname.startsWith(route))
 
   return (
-    <div className="relative min-h-[100svh] bg-[#0B0B0B] pb-28">
+    <div 
+      className="relative min-h-[100svh] bg-[#0B0B0B]"
+      style={{
+        paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))'
+      }}
+    >
       {children}
       {showNav && <MobileNav />}
       {showCameraButton && <FloatingCameraButton />}

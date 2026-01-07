@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertCircle, TrendingUp, Utensils, ArrowRight, Crown } from 'lucide-react'
+import { AlertCircle, TrendingUp, Utensils, ArrowRight, Crown, ChefHat } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MobileWrapper } from '@/components/mobile-wrapper'
@@ -129,8 +129,34 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-3xl font-bold mb-1">Buenos días 👋</h1>
-          <p className="text-muted-foreground text-sm">Controla tus alimentos con IA</p>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="VenAi Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold">VenAi</h1>
+              {/* Mensaje dinámico de valor */}
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {stats.expiringSoonCount > 0 
+                  ? `${stats.expiringSoonCount} alimento${stats.expiringSoonCount > 1 ? 's' : ''} vence${stats.expiringSoonCount > 1 ? 'n' : ''} pronto`
+                  : stats.totalFoods > 0
+                  ? 'Todo bajo control'
+                  : 'Evita botar comida hoy'
+                }
+              </p>
+              {/* Frase gancho tipo mantra - solo visible si hay alimentos */}
+              {stats.totalFoods > 0 && (
+                <p className="text-xs text-amber-500/70 mt-1 italic">
+                  "VenAi se paga solo con la comida que no botas"
+                </p>
+              )}
+            </div>
+          </div>
+
         </motion.div>
 
         {/* Premium Banner */}
@@ -150,7 +176,10 @@ export default function HomePage() {
                   <div className="flex-1">
                     <p className="font-semibold text-amber-500 text-sm">Pásate a Premium</p>
                     <p className="text-xs text-amber-500/70">
-                      Alimentos ilimitados y recetas IA
+                      {stats.expiringSoonCount > 0 
+                        ? `Ahorra dinero evitando botar ${stats.expiringSoonCount} alimento${stats.expiringSoonCount > 1 ? 's' : ''}`
+                        : 'VenAi se paga solo con la comida que no botas'
+                      }
                     </p>
                   </div>
                   <ArrowRight className="h-4 w-4 text-amber-500/70" />
@@ -167,6 +196,22 @@ export default function HomePage() {
           transition={{ delay: 0.3 }}
           className="grid grid-cols-2 gap-3 mb-6"
         >
+          {/* Métrica emocional: Ahorro estimado */}
+          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/20 col-span-2">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-green-500/20 rounded-md">
+                  <TrendingUp className="h-4 w-4 text-green-400" />
+                </div>
+                <span className="text-xs text-muted-foreground">Ahorro estimado</span>
+              </div>
+              <p className="text-2xl font-bold text-green-400">
+                ₡{((stats.totalFoods - stats.expiredCount) * 2000).toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">este mes evitando desperdicios</p>
+            </CardContent>
+          </Card>
+
           <Card className="bg-card/50 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -284,7 +329,15 @@ export default function HomePage() {
                           </p>
                         </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="shrink-0"
+                        onClick={() => window.location.href = `/recipes?food=${food.id}`}
+                      >
+                        <ChefHat className="h-3 w-3 mr-1" />
+                        Receta
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -293,7 +346,7 @@ export default function HomePage() {
           )}
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Reordenadas: Cocinar primero */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -303,13 +356,16 @@ export default function HomePage() {
           <h2 className="text-lg font-semibold mb-4">Acciones rápidas</h2>
           <div className="grid grid-cols-2 gap-3">
             <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50"
+              variant="default"
+              className="h-auto py-4 flex flex-col items-center gap-2 bg-primary"
               asChild
             >
-              <a href="/foods">
-                <Utensils className="h-5 w-5" />
-                <span className="text-sm">Ver Alimentos</span>
+              <a href="/recipes">
+                <ChefHat className="h-5 w-5" />
+                <span className="text-sm font-semibold">Cocinar ahora</span>
+                {stats.expiringSoonCount > 0 && (
+                  <span className="text-xs opacity-80">Con lo que vence</span>
+                )}
               </a>
             </Button>
             <Button
@@ -317,9 +373,9 @@ export default function HomePage() {
               className="h-auto py-4 flex flex-col items-center gap-2 bg-card/50"
               asChild
             >
-              <a href="/recipes">
-                <TrendingUp className="h-5 w-5" />
-                <span className="text-sm">Generar Receta</span>
+              <a href="/foods">
+                <Utensils className="h-5 w-5" />
+                <span className="text-sm">Ver Alimentos</span>
               </a>
             </Button>
           </div>

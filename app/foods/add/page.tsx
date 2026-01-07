@@ -21,24 +21,79 @@ export default function AddFoodPage() {
   })
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [loadingData, setLoadingData] = useState(true)
 
   useEffect(() => {
-    // Get data from URL params
-    const params = new URLSearchParams(window.location.search)
-    const name = params.get('name')
-    const expiryDate = params.get('expiryDate')
-    const image = params.get('image')
+    const loadData = async () => {
+      // Get data from URL params
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      const name = params.get('name')
+      const expiryDate = params.get('expiryDate')
+      const category = params.get('category')
+      const notes = params.get('notes')
 
-    if (name) setFormData(prev => ({ ...prev, name }))
-    if (expiryDate) {
-      // Convert DD/MM/YYYY to YYYY-MM-DD for HTML date input
-      const [day, month, year] = expiryDate.split('/')
-      if (day && month && year) {
-        const formattedDate = `${year}-${month}-${day}`
-        setFormData(prev => ({ ...prev, expiryDate: formattedDate }))
+      // Si hay un ID, es modo edición - cargar datos desde la API
+      if (id) {
+        setEditingId(id)
+        try {
+          const response = await fetch(`/api/foods/${id}`)
+          if (response.ok) {
+            const data = await response.json()
+            const food = data.food
+            
+            // Mapear datos de la API
+            setFormData({
+              name: food.name || '',
+              expiryDate: food.expiry_date ? new Date(food.expiry_date).toISOString().split('T')[0] : '',
+              category: food.category || '',
+              notes: food.notes || ''
+            })
+            if (food.image_url) {
+              setImageUrl(food.image_url)
+            }
+          }
+        } catch (error) {
+          console.error('Error loading food data:', error)
+        }
+      } else {
+        // Modo creación - usar datos de URL params o sessionStorage
+        // Get image from sessionStorage (to avoid URL length issues)
+        const imageFromStorage = sessionStorage.getItem('camera_image')
+        const editImageFromStorage = sessionStorage.getItem('edit_food_image')
+        const nameFromStorage = sessionStorage.getItem('camera_foodName')
+        const expiryFromStorage = sessionStorage.getItem('camera_expiryDate')
+
+        // Prefer URL params, fallback to sessionStorage
+        const finalName = name || nameFromStorage || ''
+        const finalExpiryDate = expiryDate || expiryFromStorage || ''
+        const finalImage = imageFromStorage || editImageFromStorage
+
+        if (finalName) setFormData(prev => ({ ...prev, name: finalName }))
+        if (finalExpiryDate) {
+          // Convert DD/MM/YYYY to YYYY-MM-DD for HTML date input
+          const [day, month, year] = finalExpiryDate.split('/')
+          if (day && month && year) {
+            const formattedDate = `${year}-${month}-${day}`
+            setFormData(prev => ({ ...prev, expiryDate: formattedDate }))
+          }
+        }
+        if (category) setFormData(prev => ({ ...prev, category }))
+        if (notes) setFormData(prev => ({ ...prev, notes }))
+        if (finalImage) setImageUrl(finalImage)
+
+        // Clean up sessionStorage after reading
+        if (imageFromStorage) sessionStorage.removeItem('camera_image')
+        if (editImageFromStorage) sessionStorage.removeItem('edit_food_image')
+        if (nameFromStorage) sessionStorage.removeItem('camera_foodName')
+        if (expiryFromStorage) sessionStorage.removeItem('camera_expiryDate')
       }
+      
+      setLoadingData(false)
     }
-    if (image) setImageUrl(image)
+
+    loadData()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,11 +110,14 @@ export default function AddFoodPage() {
 
     setLoading(true)
     try {
-      // Sin base de datos, usar la imagen base64 directamente
       let finalImageUrl = imageUrl
 
-      const response = await fetch('/api/foods', {
-        method: 'POST',
+      // Determinar si es edición o creación
+      const url = editingId ? `/api/foods/${editingId}` : '/api/foods'
+      const method = editingId ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -69,20 +127,48 @@ export default function AddFoodPage() {
         })
       })
 
+      let data: any = { error: 'Error desconocido' }
+      try {
+        const text = await response.text()
+        if (text) {
+          data = JSON.parse(text)
+        }
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError)
+        data = { error: `Error ${response.status}: ${response.statusText || 'Error desconocido'}` }
+      }
+
       if (response.ok) {
         toast({
-          title: '¡Alimento guardado!',
-          description: `${formData.name} se ha agregado correctamente`
+          title: editingId ? '¡Alimento actualizado!' : '¡Alimento guardado!',
+          description: `${formData.name} se ha ${editingId ? 'actualizado' : 'agregado'} correctamente`
         })
         window.location.href = '/foods'
       } else {
-        throw new Error('Error al guardar')
+        // Manejar diferentes tipos de errores
+        let errorMessage = 'No se pudo guardar el alimento. Intenta de nuevo.'
+        
+        if (response.status === 401) {
+          errorMessage = 'No autenticado. Por favor inicia sesión para guardar alimentos.'
+        } else if (response.status === 400) {
+          errorMessage = data.error || 'Datos inválidos. Verifica la información ingresada.'
+        } else if (response.status === 500) {
+          errorMessage = data.error || 'Error del servidor. Intenta de nuevo más tarde.'
+        } else if (data.error) {
+          errorMessage = data.error
+        }
+
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive'
+        })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving food:', error)
       toast({
         title: 'Error',
-        description: 'No se pudo guardar el alimento. Intenta de nuevo.',
+        description: error.message || 'Error de conexión. Verifica tu conexión a internet e intenta de nuevo.',
         variant: 'destructive'
       })
     } finally {
@@ -92,6 +178,18 @@ export default function AddFoodPage() {
 
   const handleNewPhoto = () => {
     window.location.href = '/camera'
+  }
+
+  if (loadingData) {
+    return (
+      <AuthGuard action="guardar alimentos">
+        <MobileWrapper>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        </MobileWrapper>
+      </AuthGuard>
+    )
   }
 
   return (
@@ -106,9 +204,11 @@ export default function AddFoodPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-1">Agregar Alimento</h1>
+              <h1 className="text-3xl font-bold mb-1">
+                {editingId ? 'Editar Alimento' : 'Agregar Alimento'}
+              </h1>
               <p className="text-muted-foreground text-sm">
-                Completa la información del alimento
+                {editingId ? 'Modifica la información del alimento' : 'Completa la información del alimento'}
               </p>
             </div>
             <Button
@@ -235,7 +335,7 @@ export default function AddFoodPage() {
               ) : (
                 <Save className="h-5 w-5 mr-2" />
               )}
-              {loading ? 'Guardando...' : 'Guardar Alimento'}
+              {loading ? (editingId ? 'Actualizando...' : 'Guardando...') : (editingId ? 'Actualizar Alimento' : 'Guardar Alimento')}
             </Button>
           </motion.div>
         </motion.form>
